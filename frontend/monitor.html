@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Monitor</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📶</text></svg>">
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: rgba(255,255,255,0.1); 
+            padding: 30px; 
+            border-radius: 15px; 
+            backdrop-filter: blur(10px);
+        }
+        h1 { text-align: center; margin-bottom: 30px; }
+        .status-card { 
+            background: rgba(255,255,255,0.2); 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 10px; 
+            border-left: 4px solid #4CAF50;
+        }
+        .status-card.error { border-left-color: #f44336; }
+        .status-card.warning { border-left-color: #ff9800; }
+        .status-item { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 10px 0; 
+            padding: 10px; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 5px; 
+        }
+        .status-value { font-weight: bold; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .refresh-btn { 
+            background: #4CAF50; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            margin: 10px 5px;
+        }
+        .refresh-btn:hover { background: #45a049; }
+        .log { 
+            max-height: 200px; 
+            overflow-y: auto; 
+            background: rgba(0,0,0,0.2); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry { 
+            margin: 2px 0; 
+            padding: 2px 0; 
+        }
+        .log-success { color: #4CAF50; }
+        .log-error { color: #f44336; }
+        .log-info { color: #2196F3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Backend Monitor</h1>
+        
+        <div class="status-card" id="backendStatus">
+            <h3>🖥️ Backend Status</h3>
+            <div class="status-item">
+                <span>API Endpoint:</span>
+                <span class="status-value" id="apiStatus">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span>Last Check:</span>
+                <span class="status-value" id="lastCheck">-</span>
+            </div>
+            <div class="status-item">
+                <span>Response Time:</span>
+                <span class="status-value" id="responseTime">-</span>
+            </div>
+        </div>
+
+        <div class="status-card" id="systemStatus">
+            <h3>📊 System Information</h3>
+            <div class="status-item">
+                <span>Database:</span>
+                <span class="status-value" id="databaseStatus">-</span>
+            </div>
+            <div class="status-item">
+                <span>Model:</span>
+                <span class="status-value" id="modelStatus">-</span>
+            </div>
+            <div class="status-item">
+                <span>Total Scans:</span>
+                <span class="status-value" id="totalScans">-</span>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h3>📝 Activity Log</h3>
+            <div class="log" id="activityLog">
+                <div class="log-entry log-info">Monitor started...</div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="refresh-btn" onclick="checkBackend()">🔄 Check Now</button>
+            <button class="refresh-btn" onclick="window.open('index.html', '_blank')">📊 Open Dashboard</button>
+            <button class="refresh-btn" onclick="clearLog()">🗑️ Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001';
+        let checkInterval;
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('activityLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateTimestamp() {
+            document.getElementById('lastCheck').textContent = new Date().toLocaleTimeString();
+        }
+        
+        async function checkBackend() {
+            const startTime = Date.now();
+            
+            try {
+                log('Checking backend status...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/status`);
+                const data = await response.json();
+                
+                const responseTime = Date.now() - startTime;
+                
+                if (data.success) {
+                    document.getElementById('apiStatus').innerHTML = '<span class="success">✅ Online</span>';
+                    document.getElementById('responseTime').textContent = `${responseTime}ms`;
+                    
+                    // Update system info
+                    document.getElementById('databaseStatus').innerHTML = data.status.database_connected ? 
+                        '<span class="success">✅ Connected</span>' : '<span class="error">❌ Disconnected</span>';
+                    document.getElementById('modelStatus').innerHTML = data.status.model_loaded ? 
+                        '<span class="success">✅ Loaded</span>' : '<span class="warning">⚠️ Not Loaded</span>';
+                    document.getElementById('totalScans').textContent = data.status.total_scans;
+                    
+                    log(`Backend is healthy (${responseTime}ms)`, 'success');
+                    
+                    // Update status card
+                    document.getElementById('backendStatus').className = 'status-card';
+                    document.getElementById('systemStatus').className = 'status-card';
+                    
+                } else {
+                    throw new Error('Backend returned error');
+                }
+                
+            } catch (error) {
+                document.getElementById('apiStatus').innerHTML = '<span class="error">❌ Offline</span>';
+                document.getElementById('responseTime').textContent = 'N/A';
+                document.getElementById('databaseStatus').innerHTML = '<span class="error">❌ Unknown</span>';
+                document.getElementById('modelStatus').innerHTML = '<span class="error">❌ Unknown</span>';
+                document.getElementById('totalScans').textContent = 'N/A';
+                
+                log(`Backend is offline: ${error.message}`, 'error');
+                
+                // Update status card
+                document.getElementById('backendStatus').className = 'status-card error';
+                document.getElementById('systemStatus').className = 'status-card error';
+            }
+            
+            updateTimestamp();
+        }
+        
+        function clearLog() {
+            document.getElementById('activityLog').innerHTML = '<div class="log-entry log-info">Log cleared...</div>';
+        }
+        
+        function startMonitoring() {
+            log('Starting automatic monitoring (every 10 seconds)', 'info');
+            checkInterval = setInterval(checkBackend, 10000);
+        }
+        
+        function stopMonitoring() {
+            if (checkInterval) {
+                clearInterval(checkInterval);
+                log('Stopped automatic monitoring', 'info');
+            }
+        }
+        
+        // Start monitoring on page load
+        window.addEventListener('load', () => {
+            checkBackend();
+            startMonitoring();
+        });
+        
+        // Stop monitoring when page is hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopMonitoring();
+            } else {
+                startMonitoring();
+            }
+        });
+    </script>
+</body>
+</html>

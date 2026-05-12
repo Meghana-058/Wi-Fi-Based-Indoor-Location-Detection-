@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Debug Page</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📶</text></svg>">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Wi-Fi Fingerprinting Debug Page</h1>
+    
+    <div id="status" class="status info">Initializing...</div>
+    
+    <div>
+        <button onclick="testConnection()">Test Backend Connection</button>
+        <button onclick="testScan()">Test Wi-Fi Scan</button>
+        <button onclick="testPrediction()">Test Location Prediction</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div id="log"></div>
+    
+    <script>
+        const API_BASE = 'http://localhost:5001';
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `status ${type}`;
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        async function testConnection() {
+            log('Testing backend connection...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/api/status`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Backend connection successful!', 'success');
+                    log(`Model loaded: ${data.status.model_loaded}`, 'info');
+                    log(`Database connected: ${data.status.database_connected}`, 'info');
+                    updateStatus('Backend Connected', 'success');
+                } else {
+                    log('❌ Backend returned error', 'error');
+                    updateStatus('Backend Error', 'error');
+                }
+            } catch (error) {
+                log(`❌ Connection failed: ${error.message}`, 'error');
+                updateStatus('Connection Failed', 'error');
+            }
+        }
+        
+        async function testScan() {
+            log('Testing Wi-Fi scan...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/api/scan`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✅ Scan successful! Found ${data.networks.length} networks:`, 'success');
+                    data.networks.slice(0, 5).forEach((net, i) => {
+                        log(`${i+1}. ${net.ssid} - ${net.signal} dBm - ${net.frequency} MHz`, 'info');
+                    });
+                    updateStatus(`Scan Complete (${data.networks.length} networks)`, 'success');
+                } else {
+                    log(`❌ Scan failed: ${data.error}`, 'error');
+                    updateStatus('Scan Failed', 'error');
+                }
+            } catch (error) {
+                log(`❌ Scan request failed: ${error.message}`, 'error');
+                updateStatus('Scan Request Failed', 'error');
+            }
+        }
+        
+        async function testPrediction() {
+            log('Testing location prediction...', 'info');
+            try {
+                const testData = {
+                    rssi_data: [
+                        { ssid: "JioFiber-He5ad_5G", signal: -52, bssid: "00:00:00:00:00:00" },
+                        { ssid: "iPhone", signal: -67, bssid: "00:00:00:00:00:00" }
+                    ]
+                };
+                
+                const response = await fetch(`${API_BASE}/api/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Prediction successful!', 'success');
+                    log(`Location: ${data.prediction.location}`, 'info');
+                    log(`Confidence: ${(data.prediction.confidence * 100).toFixed(1)}%`, 'info');
+                    log(`Signal Quality: ${data.prediction.signal_quality.overall_quality}`, 'info');
+                    updateStatus(`Prediction: ${data.prediction.location}`, 'success');
+                } else {
+                    log(`❌ Prediction failed: ${data.error}`, 'error');
+                    updateStatus('Prediction Failed', 'error');
+                }
+            } catch (error) {
+                log(`❌ Prediction request failed: ${error.message}`, 'error');
+                updateStatus('Prediction Request Failed', 'error');
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // Auto-test connection on load
+        window.addEventListener('load', () => {
+            log('Debug page loaded', 'info');
+            testConnection();
+        });
+    </script>
+</body>
+</html>

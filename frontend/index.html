@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Fingerprinting Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📶</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-wifi"></i>
+                    <h1>Wi-Fi Fingerprinting</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="startScanBtn">
+                        <i class="fas fa-play"></i>
+                        Start Scan
+                    </button>
+                    <button class="btn btn-secondary" id="settingsBtn">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </button>
+                    <button class="btn btn-info" id="helpBtn">
+                        <i class="fas fa-question-circle"></i>
+                        Help
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Status Cards -->
+            <div class="status-cards">
+                <div class="card status-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-map-marker-alt"></i> Current Location</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="location-info">
+                            <div class="location-name" id="currentLocation">Unknown</div>
+                            <div class="location-coords" id="locationCoords">Coordinates: --</div>
+                            <div class="confidence" id="confidence">Confidence: --</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card status-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-signal"></i> Signal Quality</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="signal-info">
+                            <div class="signal-quality" id="signalQuality">Poor</div>
+                            <div class="signal-score" id="signalScore">Score: --</div>
+                            <div class="network-count" id="networkCount">Networks: --</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card status-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> System Status</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="system-info">
+                            <div class="status-indicator" id="systemStatus">
+                                <i class="fas fa-circle"></i>
+                                <span>Connecting...</span>
+                            </div>
+                            <div class="scan-count" id="scanCount">Scans: 0</div>
+                            <div class="last-update" id="lastUpdate">Last Update: --</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Map Section -->
+                <div class="card map-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-map"></i> Interactive Map</h3>
+                        <div class="map-controls">
+                            <button class="btn btn-sm btn-primary" id="scanMapBtn">
+                                <i class="fas fa-search"></i> Scan Now
+                            </button>
+                            <button class="btn btn-sm" id="toggleHeatmap">Toggle Heatmap</button>
+                            <button class="btn btn-sm" id="toggleSignals">Hide Signals</button>
+                            <button class="btn btn-sm" id="refreshMap">Refresh</button>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div id="map" class="map-container"></div>
+                    </div>
+                </div>
+
+                <!-- Signal Analytics -->
+                <div class="card analytics-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-bar"></i> Signal Analytics</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="chart-container">
+                            <canvas id="signalChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Network List -->
+                <div class="card network-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-network-wired"></i> Detected Networks</h3>
+                        <div class="network-count" id="networkCountHeader">0 networks</div>
+                    </div>
+                    <div class="card-content">
+                        <div class="network-list" id="networkList">
+                            <div class="no-networks">No networks detected</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Similarity Scores -->
+                <div class="card similarity-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-percentage"></i> Location Similarity</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="similarity-list" id="similarityList">
+                            <div class="no-data">No similarity data</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metrics Dashboard -->
+            <div class="card metrics-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-pie"></i> Performance Metrics</h3>
+                    <div class="metrics-controls">
+                        <button class="btn btn-sm" id="refreshMetrics">Refresh</button>
+                        <button class="btn btn-sm" id="showRecentMetrics">Recent (24h)</button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div id="metricsInfo" class="metrics-info" style="margin-bottom: 16px; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; display: none;">
+                        <p style="margin: 0; font-size: 13px; color: #856404;">
+                            <strong>ℹ️ Note:</strong> Metrics require ground truth data. Add reference points or manually add ground truth to see metrics.
+                        </p>
+                    </div>
+                    <div class="metrics-grid" id="metricsGrid">
+                        <div class="metric-item">
+                            <div class="metric-label">Accuracy</div>
+                            <div class="metric-value" id="metricAccuracy">--</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">Precision</div>
+                            <div class="metric-value" id="metricPrecision">--</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">Recall</div>
+                            <div class="metric-value" id="metricRecall">--</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">F1-Score</div>
+                            <div class="metric-value" id="metricF1">--</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">mAP</div>
+                            <div class="metric-value" id="metricMAP">--</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">Total Predictions</div>
+                            <div class="metric-value" id="metricTotal">--</div>
+                        </div>
+                    </div>
+                    <div id="perClassMetrics" class="per-class-metrics" style="display: none;">
+                        <h4>Per-Class Metrics</h4>
+                        <div id="perClassMetricsList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracking Status -->
+            <div class="card tracking-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-route"></i> Location Tracking</h3>
+                </div>
+                <div class="card-content">
+                    <div class="tracking-info">
+                        <div id="stableLocationIndicator" class="stable-location-indicator" style="display: none;">
+                            <i class="fas fa-check-circle"></i> Stable Location
+                        </div>
+                        <div class="tracking-controls">
+                            <button class="btn btn-sm btn-primary" id="setDestinationBtn">Set Destination</button>
+                            <button class="btn btn-sm" id="clearDestinationBtn">Clear Destination</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <div class="card history-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-history"></i> Scan History</h3>
+                    <div class="history-controls">
+                        <button class="btn btn-sm" id="clearHistory">Clear</button>
+                        <button class="btn btn-sm" id="exportHistory">Export</button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="history-list" id="historyList">
+                        <div class="no-history">No scan history available</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Settings Modal -->
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-cog"></i> Settings</h3>
+                    <button class="modal-close" id="closeSettingsModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <h4><i class="fas fa-brain"></i> Model Training</h4>
+                        <div class="form-group">
+                            <label for="trainLocation">Add Reference Point (Current Location):</label>
+                            <div style="display: flex; gap: 8px;">
+                                <select id="trainLocation" class="form-control">
+                                    <option value="">Select Location...</option>
+                                    <option value="Area 1">Area 1</option>
+                                    <option value="Area 2">Area 2</option>
+                                    <option value="Area 3">Area 3</option>
+                                    <option value="Area 4">Area 4</option>
+                                    <option value="Area 5">Area 5</option>
+                                    <option value="Area 6">Area 6</option>
+                                    <option value="Area 7">Area 7</option>
+                                    <option value="Area 8">Area 8</option>
+                                    <option value="Area 9">Area 9</option>
+                                    <option value="Area 10">Area 10</option>
+                                </select>
+                                <button class="btn btn-primary" id="addReferenceBtn">
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                            </div>
+                            <small style="color: var(--text-secondary); margin-top: 4px; display: block;">
+                                Scan for networks first, then add this location as a reference point
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-success" id="trainModelBtn" style="width: 100%;">
+                                <i class="fas fa-graduation-cap"></i> Train Model
+                            </button>
+                            <small style="color: var(--text-secondary); margin-top: 4px; display: block;">
+                                Train the model with all collected reference points
+                            </small>
+                        </div>
+                        <div id="trainingStatus" style="margin-top: 12px; padding: 8px; background: var(--surface-dark); border-radius: var(--border-radius-small); display: none;">
+                            <div id="trainingStatusText"></div>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h4>Model Settings</h4>
+                        <div class="form-group">
+                            <label for="modelPath">Model Path:</label>
+                            <input type="text" id="modelPath" value="models/similarity_model.h5">
+                        </div>
+                        <div class="form-group">
+                            <label for="confidenceThreshold">Confidence Threshold:</label>
+                            <input type="range" id="confidenceThreshold" min="0" max="1" step="0.1" value="0.7">
+                            <span id="confidenceValue">0.7</span>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h4>Reference Points</h4>
+                        <div class="form-group">
+                            <label for="newLocationId">Location ID:</label>
+                            <input type="text" id="newLocationId" placeholder="Enter location name">
+                        </div>
+                        <button class="btn btn-primary" id="addReferencePoint">Add Reference Point</button>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h4>Training</h4>
+                        <button class="btn btn-warning" id="retrainModel">Retrain Model</button>
+                        <button class="btn btn-danger" id="resetModel">Reset Model</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Processing...</p>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <!-- Connection Instructions Modal -->
+    <div class="modal" id="connectionModal">
+        <div class="modal-content connection-modal-content-wrapper">
+            <div class="modal-header">
+                <h2><i class="fas fa-wifi"></i> Connect to Network</h2>
+                <button class="modal-close" id="closeConnectionModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="connection-modal-content">
+                    <!-- Content will be dynamically inserted -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-question-circle"></i> Wi-Fi Connection Guide</h2>
+                <button class="modal-close" id="closeHelpModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="help-section">
+                    <h3><i class="fas fa-wifi"></i> How to Connect to Wi-Fi</h3>
+                    <div class="help-steps">
+                        <div class="help-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Enable Wi-Fi on Your Device</h4>
+                                <p><strong>macOS:</strong> Click the Wi-Fi icon in the menu bar and select "Turn Wi-Fi On"</p>
+                                <p><strong>Windows:</strong> Go to Settings → Network & Internet → Wi-Fi → Turn on</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Scan for Available Networks</h4>
+                                <p>Click the <strong>"Scan Now"</strong> button in the dashboard to scan for nearby Wi-Fi networks.</p>
+                                <p>The system will automatically detect all available networks and display them with signal strength.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>View Network Details</h4>
+                                <p>Check the <strong>"Detected Networks"</strong> section to see:</p>
+                                <ul>
+                                    <li>Network name (SSID)</li>
+                                    <li>Signal strength (RSSI in dBm)</li>
+                                    <li>Signal quality (Excellent/Good/Fair/Poor)</li>
+                                    <li>Coverage range (up to 10 meters)</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h4>Connect to a Network</h4>
+                                <p><strong>macOS:</strong></p>
+                                <ol>
+                                    <li>Click the Wi-Fi icon in the menu bar</li>
+                                    <li>Select the network you want to connect to</li>
+                                    <li>Enter the password if required</li>
+                                </ol>
+                                <p><strong>Windows:</strong></p>
+                                <ol>
+                                    <li>Click the Wi-Fi icon in the system tray</li>
+                                    <li>Select your network from the list</li>
+                                    <li>Click "Connect" and enter the password</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <div class="step-number">5</div>
+                            <div class="step-content">
+                                <h4>Monitor Connection Quality</h4>
+                                <p>After connecting, use the dashboard to monitor:</p>
+                                <ul>
+                                    <li><strong>Signal Quality:</strong> Real-time assessment of your connection</li>
+                                    <li><strong>Location Accuracy:</strong> Your position based on Wi-Fi fingerprinting</li>
+                                    <li><strong>Signal Chart:</strong> Historical signal strength trends</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="help-section">
+                    <h3><i class="fas fa-info-circle"></i> Tips for Better Wi-Fi Performance</h3>
+                    <ul class="help-tips">
+                        <li><i class="fas fa-check-circle"></i> <strong>Excellent Signal (-30 to -50 dBm):</strong> Optimal for all applications</li>
+                        <li><i class="fas fa-check-circle"></i> <strong>Good Signal (-50 to -60 dBm):</strong> Good for most activities</li>
+                        <li><i class="fas fa-exclamation-circle"></i> <strong>Fair Signal (-60 to -70 dBm):</strong> May experience slower speeds</li>
+                        <li><i class="fas fa-times-circle"></i> <strong>Poor Signal (below -70 dBm):</strong> Consider moving closer to the router</li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h3><i class="fas fa-map"></i> Understanding the Map</h3>
+                    <ul class="help-tips">
+                        <li>The map shows your current location with an accuracy circle</li>
+                        <li>Wi-Fi networks are displayed with colored range circles (up to 10 meters)</li>
+                        <li>Green circles = Excellent signal, Blue = Good, Yellow = Fair, Red = Poor</li>
+                        <li>Click on network markers to see detailed information</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/visualization.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+{
+  "sample_wifi_fingerprints": [
+    {
+      "location_id": "Area 1",
+      "rssi_data": [
+        {
+          "ssid": "HomeWiFi_5G",
+          "bssid": "aa:bb:cc:dd:ee:01",
+          "signal": -45,
+          "frequency": 5180,
+          "security": "WPA2-PSK",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "OfficeNetwork",
+          "bssid": "aa:bb:cc:dd:ee:02",
+          "signal": -55,
+          "frequency": 2412,
+          "security": "WPA2",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "Guest_WiFi",
+          "bssid": "aa:bb:cc:dd:ee:03",
+          "signal": -65,
+          "frequency": 2437,
+          "security": "Open",
+          "timestamp": 1640995200
+        }
+      ],
+      "coordinates": {
+        "x": 50,
+        "y": 30,
+        "floor": 1
+      }
+    },
+    {
+      "location_id": "Area 2",
+      "rssi_data": [
+        {
+          "ssid": "HomeWiFi_5G",
+          "bssid": "aa:bb:cc:dd:ee:01",
+          "signal": -50,
+          "frequency": 5180,
+          "security": "WPA2-PSK",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "OfficeNetwork",
+          "bssid": "aa:bb:cc:dd:ee:02",
+          "signal": -60,
+          "frequency": 2412,
+          "security": "WPA2",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "NeighborWiFi",
+          "bssid": "aa:bb:cc:dd:ee:04",
+          "signal": -70,
+          "frequency": 2462,
+          "security": "WPA-PSK",
+          "timestamp": 1640995200
+        }
+      ],
+      "coordinates": {
+        "x": 20,
+        "y": 60,
+        "floor": 1
+      }
+    },
+    {
+      "location_id": "Area 3",
+      "rssi_data": [
+        {
+          "ssid": "HomeWiFi_5G",
+          "bssid": "aa:bb:cc:dd:ee:01",
+          "signal": -40,
+          "frequency": 5180,
+          "security": "WPA2-PSK",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "OfficeNetwork",
+          "bssid": "aa:bb:cc:dd:ee:02",
+          "signal": -55,
+          "frequency": 2412,
+          "security": "WPA2",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "Cafe_Free_WiFi",
+          "bssid": "aa:bb:cc:dd:ee:05",
+          "signal": -75,
+          "frequency": 2484,
+          "security": "Open",
+          "timestamp": 1640995200
+        }
+      ],
+      "coordinates": {
+        "x": 80,
+        "y": 80,
+        "floor": 1
+      }
+    },
+    {
+      "location_id": "Area 4",
+      "rssi_data": [
+        {
+          "ssid": "OfficeNetwork",
+          "bssid": "aa:bb:cc:dd:ee:02",
+          "signal": -35,
+          "frequency": 2412,
+          "security": "WPA2",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "HomeWiFi_5G",
+          "bssid": "aa:bb:cc:dd:ee:01",
+          "signal": -55,
+          "frequency": 5180,
+          "security": "WPA2-PSK",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "Guest_WiFi",
+          "bssid": "aa:bb:cc:dd:ee:03",
+          "signal": -65,
+          "frequency": 2437,
+          "security": "Open",
+          "timestamp": 1640995200
+        }
+      ],
+      "coordinates": {
+        "x": 30,
+        "y": 20,
+        "floor": 1
+      }
+    },
+    {
+      "location_id": "Area 5",
+      "rssi_data": [
+        {
+          "ssid": "HomeWiFi_5G",
+          "bssid": "aa:bb:cc:dd:ee:01",
+          "signal": -50,
+          "frequency": 5180,
+          "security": "WPA2-PSK",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "OfficeNetwork",
+          "bssid": "aa:bb:cc:dd:ee:02",
+          "signal": -55,
+          "frequency": 2412,
+          "security": "WPA2",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "Guest_WiFi",
+          "bssid": "aa:bb:cc:dd:ee:03",
+          "signal": -60,
+          "frequency": 2437,
+          "security": "Open",
+          "timestamp": 1640995200
+        },
+        {
+          "ssid": "NeighborWiFi",
+          "bssid": "aa:bb:cc:dd:ee:04",
+          "signal": -70,
+          "frequency": 2462,
+          "security": "WPA-PSK",
+          "timestamp": 1640995200
+        }
+      ],
+      "coordinates": {
+        "x": 50,
+        "y": 50,
+        "floor": 1
+      }
+    }
+  ],
+  "metadata": {
+    "description": "Sample Wi-Fi fingerprint data for training and testing",
+    "version": "1.0",
+    "created_date": "2024-01-01",
+    "total_locations": 5,
+    "total_fingerprints": 5,
+    "frequency_bands": ["2.4GHz", "5GHz"],
+    "security_types": ["WPA2-PSK", "WPA2", "Open", "WPA-PSK"]
+  }
+}

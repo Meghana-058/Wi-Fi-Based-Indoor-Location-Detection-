@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Fingerprinting Status</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📶</text></svg>">
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: rgba(255,255,255,0.1); 
+            padding: 30px; 
+            border-radius: 15px; 
+            backdrop-filter: blur(10px);
+        }
+        .status-card { 
+            background: rgba(255,255,255,0.2); 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 10px; 
+            border-left: 4px solid #4CAF50;
+        }
+        .status-card.error { border-left-color: #f44336; }
+        .status-card.warning { border-left-color: #ff9800; }
+        h1 { text-align: center; margin-bottom: 30px; }
+        .status-item { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 10px 0; 
+            padding: 10px; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 5px; 
+        }
+        .status-value { font-weight: bold; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .refresh-btn { 
+            background: #4CAF50; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            margin: 10px 5px;
+        }
+        .refresh-btn:hover { background: #45a049; }
+        .network-list { 
+            max-height: 200px; 
+            overflow-y: auto; 
+            background: rgba(0,0,0,0.2); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-top: 10px;
+        }
+        .network-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px 0; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+        }
+        .network-item:last-child { border-bottom: none; }
+        .signal-strength { 
+            font-weight: bold; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+        }
+        .signal-excellent { background: #4CAF50; }
+        .signal-good { background: #8BC34A; }
+        .signal-moderate { background: #FFC107; }
+        .signal-poor { background: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📶 Wi-Fi Fingerprinting System Status</h1>
+        
+        <div class="status-card" id="systemStatus">
+            <h3>🖥️ System Status</h3>
+            <div class="status-item">
+                <span>Backend API:</span>
+                <span class="status-value" id="backendStatus">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span>Database:</span>
+                <span class="status-value" id="databaseStatus">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span>ML Model:</span>
+                <span class="status-value" id="modelStatus">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span>Last Update:</span>
+                <span class="status-value" id="lastUpdate">-</span>
+            </div>
+        </div>
+
+        <div class="status-card" id="wifiStatus">
+            <h3>📡 Wi-Fi Networks</h3>
+            <div class="status-item">
+                <span>Networks Found:</span>
+                <span class="status-value" id="networkCount">0</span>
+            </div>
+            <div class="network-list" id="networkList">
+                <div style="text-align: center; padding: 20px; opacity: 0.7;">
+                    Scanning for networks...
+                </div>
+            </div>
+        </div>
+
+        <div class="status-card" id="locationStatus">
+            <h3>📍 Location Prediction</h3>
+            <div class="status-item">
+                <span>Current Location:</span>
+                <span class="status-value" id="currentLocation">Unknown</span>
+            </div>
+            <div class="status-item">
+                <span>Confidence:</span>
+                <span class="status-value" id="confidence">-</span>
+            </div>
+            <div class="status-item">
+                <span>Signal Quality:</span>
+                <span class="status-value" id="signalQuality">-</span>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="refresh-btn" onclick="refreshStatus()">🔄 Refresh Status</button>
+            <button class="refresh-btn" onclick="window.open('index.html', '_blank')">📊 Open Dashboard</button>
+            <button class="refresh-btn" onclick="window.open('debug.html', '_blank')">🔍 Debug Page</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001';
+        
+        function updateTimestamp() {
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+        
+        function getSignalClass(signal) {
+            if (signal >= -50) return 'signal-excellent';
+            if (signal >= -60) return 'signal-good';
+            if (signal >= -70) return 'signal-moderate';
+            return 'signal-poor';
+        }
+        
+        function getSignalLabel(signal) {
+            if (signal >= -50) return 'Excellent';
+            if (signal >= -60) return 'Good';
+            if (signal >= -70) return 'Moderate';
+            return 'Poor';
+        }
+        
+        async function refreshStatus() {
+            try {
+                // Check system status
+                const statusResponse = await fetch(`${API_BASE}/api/status`);
+                const statusData = await statusResponse.json();
+                
+                if (statusData.success) {
+                    document.getElementById('backendStatus').innerHTML = '<span class="success">✅ Connected</span>';
+                    document.getElementById('databaseStatus').innerHTML = statusData.status.database_connected ? 
+                        '<span class="success">✅ Connected</span>' : '<span class="error">❌ Disconnected</span>';
+                    document.getElementById('modelStatus').innerHTML = statusData.status.model_loaded ? 
+                        '<span class="success">✅ Loaded</span>' : '<span class="warning">⚠️ Not Loaded</span>';
+                    
+                    // Update location info if available
+                    if (statusData.status.current_location) {
+                        document.getElementById('currentLocation').textContent = statusData.status.current_location;
+                    }
+                    if (statusData.status.signal_quality) {
+                        document.getElementById('signalQuality').textContent = statusData.status.signal_quality;
+                    }
+                } else {
+                    document.getElementById('backendStatus').innerHTML = '<span class="error">❌ Error</span>';
+                }
+                
+                // Check Wi-Fi networks
+                const scanResponse = await fetch(`${API_BASE}/api/scan`);
+                const scanData = await scanResponse.json();
+                
+                if (scanData.success) {
+                    const networks = scanData.networks;
+                    document.getElementById('networkCount').textContent = networks.length;
+                    
+                    const networkList = document.getElementById('networkList');
+                    if (networks.length > 0) {
+                        networkList.innerHTML = networks.map(net => `
+                            <div class="network-item">
+                                <span>${net.ssid}</span>
+                                <span>
+                                    <span class="signal-strength ${getSignalClass(net.signal)}">
+                                        ${net.signal} dBm (${getSignalLabel(net.signal)})
+                                    </span>
+                                    <small style="opacity: 0.7;">${net.frequency} MHz</small>
+                                </span>
+                            </div>
+                        `).join('');
+                    } else {
+                        networkList.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.7;">No networks found</div>';
+                    }
+                } else {
+                    document.getElementById('networkCount').textContent = 'Error';
+                    document.getElementById('networkList').innerHTML = '<div style="text-align: center; padding: 20px; color: #f44336;">Scan failed</div>';
+                }
+                
+                updateTimestamp();
+                
+            } catch (error) {
+                console.error('Status refresh failed:', error);
+                document.getElementById('backendStatus').innerHTML = '<span class="error">❌ Connection Failed</span>';
+                document.getElementById('networkCount').textContent = 'Error';
+                document.getElementById('networkList').innerHTML = '<div style="text-align: center; padding: 20px; color: #f44336;">Connection failed</div>';
+            }
+        }
+        
+        // Auto-refresh every 10 seconds
+        setInterval(refreshStatus, 10000);
+        
+        // Initial load
+        window.addEventListener('load', refreshStatus);
+    </script>
+</body>
+</html>

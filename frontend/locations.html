@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Names Configuration</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📶</text></svg>">
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: rgba(255,255,255,0.1); 
+            padding: 30px; 
+            border-radius: 15px; 
+            backdrop-filter: blur(10px);
+        }
+        h1 { text-align: center; margin-bottom: 30px; }
+        .location-item { 
+            display: flex; 
+            align-items: center; 
+            margin: 15px 0; 
+            padding: 15px; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 10px; 
+        }
+        .location-id { 
+            font-weight: bold; 
+            min-width: 100px; 
+            margin-right: 20px; 
+        }
+        .location-input { 
+            flex: 1; 
+            padding: 10px; 
+            border: none; 
+            border-radius: 5px; 
+            background: rgba(255,255,255,0.9); 
+            color: #333; 
+            font-size: 16px; 
+        }
+        .save-btn { 
+            background: #4CAF50; 
+            color: white; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            margin: 20px 0; 
+            width: 100%; 
+        }
+        .save-btn:hover { background: #45a049; }
+        .status { 
+            padding: 15px; 
+            margin: 15px 0; 
+            border-radius: 8px; 
+            text-align: center; 
+        }
+        .success { background: rgba(76, 175, 80, 0.3); }
+        .error { background: rgba(244, 67, 54, 0.3); }
+        .info { background: rgba(33, 150, 243, 0.3); }
+        .instructions {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .back-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .back-btn:hover { background: #1976D2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← Back to Dashboard</a>
+        
+        <h1>🏠 Customize Location Names</h1>
+        
+        <div class="instructions">
+            <h3>📝 Instructions:</h3>
+            <ul>
+                <li>Rename the areas to match your actual space</li>
+                <li>Examples: "My Room", "Kitchen", "Living Room", "Office"</li>
+                <li>Click "Save Changes" to apply your custom names</li>
+                <li>Changes will be reflected in location predictions</li>
+            </ul>
+        </div>
+        
+        <div id="status" class="status info" style="display: none;"></div>
+        
+        <div id="locationForm">
+            <div id="locationsList">
+                <!-- Locations will be loaded here -->
+            </div>
+            
+            <button class="save-btn" onclick="saveLocationNames()">💾 Save Changes</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001';
+        let locations = {};
+        
+        async function loadLocations() {
+            try {
+                const response = await fetch(`${API_BASE}/api/locations`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    locations = data.locations;
+                    renderLocationForm();
+                } else {
+                    showStatus('Failed to load locations', 'error');
+                }
+            } catch (error) {
+                showStatus(`Error loading locations: ${error.message}`, 'error');
+            }
+        }
+        
+        function renderLocationForm() {
+            const container = document.getElementById('locationsList');
+            container.innerHTML = '';
+            
+            Object.keys(locations).forEach(locationId => {
+                const location = locations[locationId];
+                const div = document.createElement('div');
+                div.className = 'location-item';
+                div.innerHTML = `
+                    <div class="location-id">${locationId}:</div>
+                    <input 
+                        type="text" 
+                        class="location-input" 
+                        value="${location.display_name}" 
+                        data-location-id="${locationId}"
+                        placeholder="Enter custom name..."
+                    />
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        async function saveLocationNames() {
+            try {
+                const locationNames = {};
+                const inputs = document.querySelectorAll('.location-input');
+                
+                inputs.forEach(input => {
+                    const locationId = input.dataset.locationId;
+                    const displayName = input.value.trim();
+                    if (displayName) {
+                        locationNames[locationId] = displayName;
+                    }
+                });
+                
+                const response = await fetch(`${API_BASE}/api/locations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ location_names: locationNames })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('✅ Location names saved successfully!', 'success');
+                    // Reload locations to see updated names
+                    setTimeout(loadLocations, 1000);
+                } else {
+                    showStatus(`❌ Failed to save: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Error saving: ${error.message}`, 'error');
+            }
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Load locations on page load
+        window.addEventListener('load', loadLocations);
+    </script>
+</body>
+</html>
